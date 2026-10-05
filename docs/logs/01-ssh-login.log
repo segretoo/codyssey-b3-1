@@ -1,0 +1,62 @@
+# B3-1 SSH 접속 로그
+# 일시: 2026-10-05 / 리전: ap-tokyo-1 / 인스턴스: b31-web-01 (Ubuntu 22.04)
+# 접속 대상: Reserved Public IP 168.110.46.76 (b31-eip)
+# 참고: 첫 시도는 <새 퍼블릭 IP> 자리표시자를 그대로 입력해 중단(^C)했고, 실제 IP로 다시 접속함
+
+segreto@DESKTOP-J7HKRCG MINGW64 ~/Desktop/Codyssey/codyssey-b3-1 (main)
+$ mkdir -p ~/.ssh && mv ~/Downloads/ssh-key-*.key ~/.ssh/
+
+segreto@DESKTOP-J7HKRCG MINGW64 ~/Desktop/Codyssey/codyssey-b3-1 (main)
+$ chmod 400 ~/.ssh/ssh-key-*.key
+
+segreto@DESKTOP-J7HKRCG MINGW64 ~/Desktop/Codyssey/codyssey-b3-1 (main)
+$ ssh -i ~/.ssh/ssh-key-*.key ubuntu@<새 퍼블릭 IP>^C
+
+segreto@DESKTOP-J7HKRCG MINGW64 ~/Desktop/Codyssey/codyssey-b3-1 (main)
+$ ssh -i ~/.ssh/ssh-key-*.key ubuntu@168.110.46.76
+The authenticity of host '168.110.46.76 (168.110.46.76)' can't be established.
+ED25519 key fingerprint is SHA256:VGXgIN3Cr8+bX1BylFOrdvGHiqkAe7j/m2IaOJ63DxU.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '168.110.46.76' (ED25519) to the list of known hosts.
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.8.0-1060-oracle x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Mon Oct  5 15:27:53 UTC 2026
+
+  System load:  0.0               Processes:             122
+  Usage of /:   5.3% of 44.96GB   Users logged in:       0
+  Memory usage: 42%               IPv4 address for ens3: 10.0.1.49
+  Swap usage:   0%
+
+ * Canonical Workshop gives developers fast, composable, reproducible, and
+   secure developer environments that are perfect for agentic workflows.
+
+   https://ubuntu.com/workshop
+
+Expanded Security Maintenance for Applications is not enabled.
+
+0 updates can be applied immediately.
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+
+The programs included with the Ubuntu system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Ubuntu comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law.
+
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+ubuntu@b31-web-01-vnic:~$

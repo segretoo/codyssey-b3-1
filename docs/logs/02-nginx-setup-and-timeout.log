@@ -1,0 +1,111 @@
+# B3-1 Nginx 설정 및 외부 접속 타임아웃 로그
+# 일시: 2026-10-05 / 리전: ap-tokyo-1 / 인스턴스: b31-web-01 / Reserved Public IP: 168.110.46.76
+# 구성: (1) SSH 재접속 → Nginx 확인 → (2) /health 설정 시도(붙여넣기 오류) → (3) 집 PC에서 외부 접속 타임아웃
+# 참고: apt install nginx 단계는 이전 세션에서 실행해 이 로그에는 없음. 이후 원인 확인·조치 과정은 스크린샷(18~22번)에 기록
+
+segreto@DESKTOP-J7HKRCG MINGW64 ~/Desktop/Codyssey/codyssey-b3-1 (main)
+$ ssh -i ~/.ssh/ssh-key-*.key ubuntu@168.110.46.76
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.8.0-1060-oracle x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Mon Oct  5 15:39:28 UTC 2026
+
+  System load:  0.05              Processes:             130
+  Usage of /:   5.9% of 44.96GB   Users logged in:       0
+  Memory usage: 41%               IPv4 address for ens3: 10.0.1.49
+  Swap usage:   0%
+
+ * Canonical Workshop gives developers fast, composable, reproducible, and
+   secure developer environments that are perfect for agentic workflows.
+
+   https://ubuntu.com/workshop
+
+Expanded Security Maintenance for Applications is not enabled.
+
+32 updates can be applied immediately.
+29 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+New release '24.04.5 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+
+Last login: Mon Oct  5 15:27:54 2026 from 211.218.6.186
+ubuntu@b31-web-01-vnic:~$ sudo systemctl enable --now nginx
+Synchronizing state of nginx.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install enable nginx
+ubuntu@b31-web-01-vnic:~$ systemctl status nginx --no-pager
+● nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
+     Active: active (running) since Mon 2026-10-05 15:34:54 UTC; 4min 54s ago
+       Docs: man:nginx(8)
+   Main PID: 2972 (nginx)
+      Tasks: 3 (limit: 1014)
+     Memory: 7.5M
+        CPU: 113ms
+     CGroup: /system.slice/nginx.service
+             ├─2972 "nginx: master process /usr/sbin/nginx -g daemon on; master_process on;"
+             ├─2975 "nginx: worker process" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""…
+             └─2976 "nginx: worker process" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""…
+
+Oct 05 15:34:54 b31-web-01-vnic systemd[1]: Starting A high performance web server and…er...
+Oct 05 15:34:54 b31-web-01-vnic systemd[1]: Started A high performance web server and …rver.
+Hint: Some lines were ellipsized, use -l to show in full.
+ubuntu@b31-web-01-vnic:~$ curl -I http://localhost
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Mon, 05 Oct 2026 15:39:54 GMT
+Content-Type: text/html
+Content-Length: 612
+Last-Modified: Mon, 05 Oct 2026 15:34:49 GMT
+Connection: keep-alive
+ETag: "6ac3c399-264"
+Accept-Ranges: bytes
+
+ubuntu@b31-web-01-vnic:~$ curl -I https://example.com
+HTTP/2 200 
+date: Mon, 05 Oct 2026 15:39:58 GMT
+content-type: text/html; charset=utf-8
+server: cloudflare
+last-modified: Sun, 04 Oct 2026 20:44:03 GMT
+allow: GET, HEAD
+accept-ranges: bytes
+age: 12479
+cf-cache-status: HIT
+cf-ray: a45d85ab4f305c8b-NRT
+alt-svc: h3=":443"; ma=86400
+
+ubuntu@b31-web-01-vnic:~$ [200~sudo tee /etc/nginx/sites-available/default >/dev/null <<'EOF'
+> server {
+>     listen 80 default_server;
+>     listen [::]:80 default_server;
+>     root /var/www/html;
+>     index index.html index.htm index.nginx-debian.html;
+>     server_name _;
+> 
+>     location = /health {
+>         default_type text/plain;
+>         return 200 "OK\n";
+>     }
+> 
+>     location / {
+>         try_files $uri $uri/ =404;
+>     }
+> }
+> EOF
+[200~sudo: command not found
+ubuntu@b31-web-01-vnic:~$ sudo nginx -t && sudo systemctl reload nginx
+curl -i http://localhost/health^[[201~nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+ubuntu@b31-web-01-vnic:~$ 
+ubuntu@b31-web-01-vnic:~$ 
+
+segreto@DESKTOP-J7HKRCG MINGW64 ~/Desktop/Codyssey/codyssey-b3-1 (main)
+$ curl -m 5 -i http://168.110.46.76/health
+curl: (28) Connection timed out after 5006 milliseconds
