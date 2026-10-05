@@ -32,54 +32,76 @@ Oracle Cloud Infrastructure(OCI)에 VCN을 직접 설계하고, Public Subnet의
 | 영역 | 구성 | 확인 방법 |
 |---|---|---|
 | 네트워크 | VCN `10.0.1.0/24`, Public Subnet `10.0.1.0/24`, Internet Gateway, Route Table `0.0.0.0/0 → IGW` | 인스턴스에서 `curl -I https://example.com` |
-| 컴퓨트 | Compute Instance 1대 (Always Free Micro), SSH 접속 | `ssh -i <키파일> ubuntu@<퍼블릭IP>` |
+| 컴퓨트 | Compute Instance 1대 (Always Free Micro), SSH 접속 | `ssh -i ~/.ssh/ssh-key-*.key ubuntu@168.110.46.76` (캡처 17) |
 | 웹 서버 | Nginx 실행, `/health`가 고정 응답 반환 | `curl -i http://localhost/health` → `200 OK` |
-| 접근 제어 | NSG: 80/TCP `0.0.0.0/0`, 22/TCP `<내 공인 IP>/32`만 허용 | 콘솔의 NSG 규칙 화면 |
+| 접근 제어 | NSG: 80/TCP `0.0.0.0/0`, 22/TCP 내 공인 IP(`/32`)만 허용 | 콘솔의 NSG 규칙 화면 (캡처 14) |
 | 권한 | IAM 사용자 1명, 실습 범위 Policy, 관리자 권한 없음 | Policy 문장 (아래 학습 목표 참고) |
-| 리소스 관리 | 이름 규칙 `b31-*` + 태그 `project=b3-1` | 콘솔의 Tags / Cost Analysis 태그 필터 |
-| 정리 | 필수 5종(Instance/Boot Volume/Reserved IP/IGW/VCN) 삭제 체크리스트 | `docs/cleanup-checklist.md` |
+| 리소스 관리 | 이름 규칙 `b31-*` + 컴파트먼트 `cody-lab` | 콘솔 리소스 목록의 컴파트먼트 필터 |
+| 정리 | 필수 5종(Instance/Boot Volume/Reserved IP/IGW/VCN) 삭제 체크리스트 | `docs/cleanup-checklist.md` (캡처 25~38) |
 
 ## 개발 환경
 - 클라우드: Oracle Cloud Infrastructure (Always Free), 리전 `ap-tokyo-1` (도쿄, 홈 리전)
-- 인스턴스: `VM.Standard.E2.1.Micro` 1대, Ubuntu LTS, 부트 볼륨 기본값
+- 인스턴스: `VM.Standard.E2.1.Micro` 1대 (상시 무료 적격 표시 확인), Ubuntu 22.04 LTS
+- 스토리지: 명세의 8~10GiB는 AWS EBS 기준 예시이고, OCI는 콘솔 기본 부트 볼륨 크기(47GB)로 생성했습니다. 임의로 증설하지 않았습니다.
 - 웹 서버: Nginx
 - 외부 라이브러리: 없음 (OS 패키지 `nginx`, `iptables-persistent`만 사용)
-- 계정: 루트(테넌시 관리자) 대신 별도 IAM 사용자로 콘솔 접근
+- 계정: 테넌시 관리자 계정은 IAM 설정(컴파트먼트, 그룹, 사용자, Policy)에만 쓰고, 이후 콘솔 작업은 IAM 사용자(`cody-lab-group` 소속)로 수행했습니다. 권한은 `cody-lab` 컴파트먼트로 한정했습니다. (로그인 계정 확인: `docs/screenshots/39-iam-user-login.png`)
 
 ## 배포 & 실행 방법
 - GitHub 저장소: https://github.com/segretoo/codyssey-b3-1
-- **외부 접속 검증 방식: B — `GET http://<퍼블릭IP>/health`**
-- 접속 정보: `http://<퍼블릭IP>/health` → `200 OK` / 본문 `OK`
+- **외부 접속 검증 방식: B — `GET http://168.110.46.76/health`**
+- 접속 정보: `http://168.110.46.76/health` → `200 OK` / 본문 `OK`
+- 안내: 실습 종료 후 과금 방지를 위해 모든 리소스를 삭제했으므로 현재는 접속할 수 없습니다. 접속 결과는 스크린샷(`docs/screenshots/`)으로 확인할 수 있습니다.
 - 고정 IP: Reserved Public IP를 인스턴스에 연결해 사용 (정리 체크리스트의 EIP 대응 항목)
 
 ```bash
-# 1) SSH 접속 (키 권한 제한 후)
-chmod 400 <키파일>
-ssh -i <키파일> ubuntu@<퍼블릭IP>
+# 1) SSH 접속 (개인 키는 레포 밖 ~/.ssh 에 보관, 권한 제한)
+chmod 400 ~/.ssh/ssh-key-*.key
+ssh -i ~/.ssh/ssh-key-*.key ubuntu@168.110.46.76
 
 # 2) Nginx 설치·실행
 sudo apt update && sudo apt install -y nginx
 sudo systemctl enable --now nginx
 
-# 3) /health 엔드포인트 추가 (server 블록 안, /etc/nginx/sites-available/default)
-#    location = /health { default_type text/plain; return 200 "OK\n"; }
+# 3) /health 엔드포인트 추가 (기본 사이트 설정을 교체)
+sudo tee /etc/nginx/sites-available/default >/dev/null <<'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    root /var/www/html;
+    index index.html index.htm index.nginx-debian.html;
+    server_name _;
+
+    location = /health {
+        default_type text/plain;
+        return 200 "OK\n";
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+EOF
 sudo nginx -t && sudo systemctl reload nginx
 
-# 4) OS 방화벽에서 80 허용 (OCI Ubuntu 이미지 기본 규칙 대응)
+# 4) OS 방화벽에서 80 허용 (OCI Ubuntu 이미지는 기본적으로 80을 차단)
 sudo iptables -I INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
 sudo apt install -y iptables-persistent && sudo netfilter-persistent save
 
 # 5) 검증
-curl -i http://localhost/health          # 인스턴스 내부
-curl -I https://example.com              # 아웃바운드
-curl -i http://<퍼블릭IP>/health          # 내 PC에서 (외부)
+curl -i http://localhost/health                # 인스턴스 내부
+curl -I https://example.com                    # 아웃바운드
+curl -i http://168.110.46.76/health            # 내 PC에서 (외부)
 ```
 
-![외부 접속 결과](docs/screenshots/external-health.png)
+![외부 접속 결과 (curl)](docs/screenshots/22-external-health-ok.png)
+
+![외부 접속 결과 (브라우저)](docs/screenshots/24-browser-health.png)
 
 ## 프로젝트 구조
 ```
-b3-1-oci/
+codyssey-b3-1/
+├── .gitignore
 ├── README.md
 └── docs/
     ├── architecture.png
@@ -89,9 +111,10 @@ b3-1-oci/
     ├── logs/
     └── screenshots/
 ```
+- `.gitignore`: SSH 키 파일(`*.key`, `*.pem`)이 레포에 올라가지 않도록 차단
 - `docs/support-notice.png`: AWS 외 서비스 사용에 대한 운영진 답변 캡처 (다른 참가자 닉네임은 가림)
 - `docs/logs/`: SSH 접속, Nginx 설정, 외부 접속 타임아웃 터미널 로그
-- `docs/screenshots/`: 외부 접속, NSG 규칙, 정리 완료 화면 캡처 보관
+- `docs/screenshots/`: 01~24번(IAM·네트워크·접속·트러블슈팅 증빙), 25~38번(리소스 정리 증빙), 39번(IAM 사용자 로그인 확인)
 
 ![아키텍처](docs/architecture.png)
 
@@ -108,7 +131,7 @@ b3-1-oci/
 **Q. NSG 규칙은 어떤 기준으로 최소화했나요?**
 **"서비스에 꼭 필요한 포트만 열고, 나머지는 기본 거부"**로 최소화했습니다.
 
-- 허용: `80/TCP` ← `0.0.0.0/0` (누구나 웹 접속), `22/TCP` ← `<내 공인 IP>/32` (관리용)
+- 허용: `80/TCP` ← `0.0.0.0/0` (누구나 웹 접속), `22/TCP` ← 내 공인 IP(`/32`) (관리용)
 - 미허용: 443(HTTPS 미구성), 3306 등 DB 포트, 전체 포트 범위(0-65535), ICMP 전체 개방
 - 인바운드는 허용 목록 방식이라 규칙에 없는 포트는 자동 차단
 
@@ -117,15 +140,14 @@ b3-1-oci/
 
 - 이유: 페이지 내용이 바뀌어도 판정이 변하지 않고, `200` + 고정 본문으로 기계적으로 검증 가능
 - 이유: 나중에 인스턴스를 늘릴 때 로드밸런서 헬스체크 경로로 그대로 재사용 가능
-- 구성: Nginx `server` 블록에 `location = /health { default_type text/plain; return 200 "OK
-"; }` 추가 후 `nginx -t` → `reload`
-- 검증: 내부 `curl localhost/health` → 외부 `curl http://<퍼블릭IP>/health`
+- 구성: Nginx `server` 블록에 `location = /health { default_type text/plain; return 200 "OK\n"; }` 추가 후 `nginx -t` → `reload`
+- 검증: 내부 `curl localhost/health` → 외부 `curl http://168.110.46.76/health`
 
 **Q. 실습 리소스를 추적하고 정리하기 위해 어떤 기준을 썼나요?**
-**"이름 규칙 + 태그 + 정리 체크리스트"** 세 가지를 함께 썼습니다.
+**"이름 규칙 + 컴파트먼트 + 정리 체크리스트"** 세 가지를 함께 썼습니다.
 
 - 이름 규칙: 모든 리소스에 `b31-` 접두사 (`b31-vcn`, `b31-subnet-public`, `b31-igw`, `b31-rt-public`, `b31-nsg-web`, `b31-web-01`)
-- 태그: `project=b3-1`, `env=lab`로 Cost Analysis와 검색에서 한 번에 필터링
+- 컴파트먼트: 모든 리소스를 `cody-lab`에 생성해, 컴파트먼트 필터 하나로 조회·정리·비용 추적
 - 체크리스트: 의존 관계의 안쪽부터 삭제하고 항목마다 근거 캡처 (`docs/cleanup-checklist.md`)
 
 **Q. NSG와 IAM은 책임 범위가 어떻게 다르고, 최소권한은 왜 필요한가요?**
@@ -146,7 +168,7 @@ Allow group cody-lab-group to manage volume-family in compartment cody-lab
 **"전 세계 스캐너의 무차별 대입과 취약점 공격 대상이 되기 때문"**입니다.
 
 - SSH를 열어두면 수 분 안에 로그인 시도가 몰리고, DB 포트는 데이터 직접 유출로 이어짐
-- 대안 1: 소스를 `<내 공인 IP>/32`로 제한 (본 과제 적용)
+- 대안 1: 소스를 내 공인 IP(`/32`)로 제한 (본 과제 적용)
 - 대안 2: DB는 Private Subnet에 두고 앱 서버 NSG에서 온 트래픽만 허용
 - 대안 3: OCI Bastion 서비스나 VPN으로 접속 경로를 한 곳으로 모음, 키 인증만 사용(비밀번호 로그인 금지)
 
@@ -179,12 +201,12 @@ Allow group cody-lab-group to manage volume-family in compartment cody-lab
 - 추가 고려: 세션/파일 같은 상태를 인스턴스 밖으로 분리
 
 **Q. Billing에 예상치 못한 비용이 찍히면 어떤 순서로 의심하고 정리하나요?**
-**"켜져 있는 것 → 남아 있는 것 → 따로 붙는 것 순서로, 태그와 Cost Analysis로 추적"**합니다.
+**"켜져 있는 것 → 남아 있는 것 → 따로 붙는 것 순서로, 컴파트먼트와 Cost Analysis로 추적"**합니다.
 
 - 1순위: 실행 중인 인스턴스 (Always Free 셰이프/한도 초과 여부)
 - 2순위: 삭제 후 남은 Boot/Block Volume
 - 3순위: 미해제 Reserved Public IP, Load Balancer, NAT Gateway 등 부가 리소스
-- 추적: Cost Analysis에서 태그(`project=b3-1`)와 Compartment별로 그룹핑, Tenancy Explorer로 남은 리소스 조회
+- 추적: Cost Analysis에서 Compartment(`cody-lab`)별로 그룹핑, Tenancy Explorer나 VCN 삭제 스캔으로 남은 리소스 조회
 - 정리: `docs/cleanup-checklist.md` 순서대로 삭제하고 하루 뒤 재확인
 
 ## 배운 것 & 마무리
@@ -195,4 +217,6 @@ Allow group cody-lab-group to manage volume-family in compartment cody-lab
 ## 참고 / 트러블슈팅
 - Always Free 인스턴스는 홈 리전에서만 만들 수 있고, 유휴 상태면 회수될 수 있어요. 홈 리전은 가입 시 도쿄로 지정했습니다. (가입 때 홈 리전 선택 목록에 서울이 없었음)
 - NSG를 열어도 OS 방화벽이 막으면 외부 접속이 안 됩니다. 상세 사례: `docs/troubleshooting.md`
-- 실습 종료 후에는 `docs/cleanup-checklist.md` 순서대로 전부 삭제했습니다.
+- VCN 생성 시 기본 보안 목록에 있던 22번 포트 허용 규칙을 삭제하고, SSH는 NSG에서 내 IP(`/32`)만 허용했습니다. (캡처 11)
+- 정리 중 경로 테이블 규칙이 IGW를 참조해 IGW 종료가 막히는 오류를 겪었고, 규칙을 먼저 제거한 뒤 IGW를 삭제했습니다. (캡처 29~32)
+- 실습 종료 후 `docs/cleanup-checklist.md` 순서대로 전부 삭제했고, 단계별 근거는 캡처 25~38번에 있습니다.
