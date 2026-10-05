@@ -15,11 +15,9 @@
 ## 프로젝트 개요
 Oracle Cloud Infrastructure(OCI)에 VCN을 직접 설계하고, Public Subnet의 Compute Instance에 Nginx를 배포해 외부에서 접속 가능한 웹 서비스를 완성했습니다. "열린 포트 하나"가 사고로 이어질 수 있다는 점을 기준으로, 필요한 포트만 열고(80은 전체, 22는 내 IP만) 권한도 실습 범위로 좁혔습니다.
 
-**클라우드 선택 근거:** 명세는 AWS 기준이지만, 프리티어가 신규 가입자 한정이라 OCI Always Free(도쿄 홈 리전)로 수행했습니다. 코디세이 운영진이 `올인원_support` 채널(2026.09.04 오후 3:55)에서 "AWS 외에 다른 서비스를 이용해보셔도 됩니다"라고 안내했습니다. 근거 캡처는 `docs/support-notice.jpeg`에 있어요.
+**클라우드 선택 근거:** 명세는 AWS 기준이지만, AWS 프리티어는 신규 가입자 한정이라 OCI Always Free(도쿄 홈 리전)로 수행했습니다. 같은 사유로 다른 수강생이 `올인원_support` 채널에 문의했고(2026.09.04), 코디세이 운영진(`Codyssey_고라파덕`)이 오후 3:55에 "AWS 외에 다른 서비스를 이용해보시거나 주변 동료분들과 소통하여 과제 수행해주시면 됩니다"라고 답변했습니다. 같은 답변에서 무료 서비스 사용을 권장한다고 안내했습니다. 근거 캡처는 `docs/support-notice.png`에 있어요.
 
-**리전 선택 근거:** 명세의 서울 리전(`ap-northeast-2`) 조건은 AWS 기준 문구입니다. OCI 가입 시 홈 리전 선택 목록에 서울 리전이 없어 도쿄(`ap-tokyo-1`)를 홈 리전으로 지정했고, Always Free는 홈 리전에서만 생성할 수 있어 모든 리소스를 도쿄 한 리전에 만들었습니다. 한 리전에 모아 정리 누락과 과금 위험을 줄이려는 취지는 동일하게 지켰습니다.
-
-![운영진 안내](docs/support-notice.jpeg)
+![운영진 안내](docs/support-notice.png)
 
 | AWS | OCI (본 과제) |
 |---|---|
@@ -87,10 +85,12 @@ b3-1-oci/
     ├── architecture.png
     ├── troubleshooting.md
     ├── cleanup-checklist.md
-    ├── support-notice.jpeg
+    ├── support-notice.png
+    ├── logs/
     └── screenshots/
 ```
-- `docs/support-notice.jpeg`: OCI로 수행해도 된다는 운영진 안내 캡처
+- `docs/support-notice.png`: AWS 외 서비스 사용에 대한 운영진 답변 캡처 (다른 참가자 닉네임은 가림)
+- `docs/logs/`: SSH 접속, Nginx 설정, 외부 접속 타임아웃 터미널 로그
 - `docs/screenshots/`: 외부 접속, NSG 규칙, 정리 완료 화면 캡처 보관
 
 ![아키텍처](docs/architecture.png)
