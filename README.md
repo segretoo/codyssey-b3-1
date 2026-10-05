@@ -33,7 +33,7 @@ Oracle Cloud Infrastructure(OCI)에 VCN을 직접 설계하고, Public Subnet의
 ## 주요 기능
 | 영역 | 구성 | 확인 방법 |
 |---|---|---|
-| 네트워크 | VCN `10.0.0.0/16`, Public Subnet `10.0.1.0/24`, Internet Gateway, Route Table `0.0.0.0/0 → IGW` | 인스턴스에서 `curl -I https://example.com` |
+| 네트워크 | VCN `10.0.1.0/24`, Public Subnet `10.0.1.0/24`, Internet Gateway, Route Table `0.0.0.0/0 → IGW` | 인스턴스에서 `curl -I https://example.com` |
 | 컴퓨트 | Compute Instance 1대 (Always Free Micro), SSH 접속 | `ssh -i <키파일> ubuntu@<퍼블릭IP>` |
 | 웹 서버 | Nginx 실행, `/health`가 고정 응답 반환 | `curl -i http://localhost/health` → `200 OK` |
 | 접근 제어 | NSG: 80/TCP `0.0.0.0/0`, 22/TCP `<내 공인 IP>/32`만 허용 | 콘솔의 NSG 규칙 화면 |
@@ -101,7 +101,7 @@ b3-1-oci/
 **"길(Route Table)이 문(IGW)으로 이어져야 Subnet이 인터넷과 통신하는 Public Subnet이 된다"**고 설명합니다.
 
 - 흐름: 사용자 → 인터넷 → `IGW` → Route Table → `Public Subnet` → 퍼블릭 IP가 붙은 인스턴스 (다이어그램 ①~⑥)
-- `VCN`: 내 전용 사설 네트워크 `10.0.0.0/16`, `Subnet`: 그 안의 구역 `10.0.1.0/24`
+- `VCN`: 내 전용 사설 네트워크 `10.0.1.0/24`, `Subnet`: 그 안의 구역 `10.0.1.0/24` (서브넷이 1개뿐이라 VCN 대역 전체를 서브넷에 사용)
 - 기본 경로가 없으면 퍼블릭 IP가 있어도 응답 패킷이 나갈 길이 없어 **사실상 Private Subnet**이 됨
 - `0.0.0.0/0`은 "VCN 내부가 아닌 모든 목적지"의 기본값이라, 한 줄로 인터넷 방향 전체를 IGW로 보냄
 
