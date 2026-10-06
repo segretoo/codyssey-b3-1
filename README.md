@@ -37,12 +37,12 @@ Oracle Cloud Infrastructure(OCI)에 VCN을 직접 설계하고, Public Subnet의
 | 접근 제어 | NSG: 80/TCP `0.0.0.0/0`, 22/TCP 내 공인 IP(`/32`)만 허용 | 콘솔의 NSG 규칙 화면 (캡처 14) |
 | 권한 | IAM 사용자 1명, 실습 범위 Policy, 관리자 권한 없음 | Policy 문장 (아래 학습 목표 참고) |
 | 리소스 관리 | 이름 규칙 `b31-*` + 컴파트먼트 `cody-lab` | 콘솔 리소스 목록의 컴파트먼트 필터 |
-| 정리 | 필수 5종(Instance/Boot Volume/Reserved IP/IGW/VCN) 삭제 체크리스트 | `docs/cleanup-checklist.md` (캡처 25~38) |
+| 정리 | 필수 5종(Instance/Boot Volume/Reserved IP/IGW/VCN) 삭제 체크리스트 | `docs/cleanup-checklist.md` (캡처 25–38) |
 
 ## 개발 환경
 - 클라우드: Oracle Cloud Infrastructure (Always Free), 리전 `ap-tokyo-1` (도쿄, 홈 리전)
 - 인스턴스: `VM.Standard.E2.1.Micro` 1대 (상시 무료 적격 표시 확인), Ubuntu 22.04 LTS
-- 스토리지: 명세의 8~10GiB는 AWS EBS 기준 예시이고, OCI는 콘솔 기본 부트 볼륨 크기(47GB)로 생성했습니다. 임의로 증설하지 않았습니다.
+- 스토리지: 명세의 8–10GiB는 AWS EBS 기준 예시이고, OCI는 콘솔 기본 부트 볼륨 크기(47GB)로 생성했습니다. 임의로 증설하지 않았습니다.
 - 웹 서버: Nginx
 - 외부 라이브러리: 없음 (OS 패키지 `nginx`, `iptables-persistent`만 사용)
 - 계정: 테넌시 관리자 계정은 IAM 설정(컴파트먼트, 그룹, 사용자, Policy)에만 쓰고, 이후 콘솔 작업은 IAM 사용자(`cody-lab-group` 소속)로 수행했습니다. 권한은 `cody-lab` 컴파트먼트로 한정했습니다. (로그인 계정 확인: `docs/screenshots/39-iam-user-login.png`)
@@ -114,7 +114,7 @@ codyssey-b3-1/
 - `.gitignore`: SSH 키 파일(`*.key`, `*.pem`)이 레포에 올라가지 않도록 차단
 - `docs/support-notice.png`: AWS 외 서비스 사용에 대한 운영진 답변 캡처 (다른 참가자 닉네임은 가림)
 - `docs/logs/`: SSH 접속, Nginx 설정, 외부 접속 타임아웃 터미널 로그
-- `docs/screenshots/`: 01~24번(IAM·네트워크·접속·트러블슈팅 증빙), 25~38번(리소스 정리 증빙), 39번(IAM 사용자 로그인 확인), 40번(비용 분석 확인)
+- `docs/screenshots/`: 01–24번(IAM·네트워크·접속·트러블슈팅 증빙), 25–38번(리소스 정리 증빙), 39번(IAM 사용자 로그인 확인), 40번(비용 분석 확인)
 
 ![아키텍처](docs/architecture.png)
 
@@ -123,7 +123,7 @@ codyssey-b3-1/
 **Q. 외부 → IGW → Subnet → 인스턴스 흐름은 어떻게 되고, Route Table의 `0.0.0.0/0 → IGW`는 왜 필요한가요?**
 **"길(Route Table)이 문(IGW)으로 이어져야 Subnet이 인터넷과 통신하는 Public Subnet이 된다"**고 설명합니다.
 
-- 흐름: 사용자 → 인터넷 → `IGW` → Route Table → `Public Subnet` → 퍼블릭 IP가 붙은 인스턴스 (다이어그램 ①~⑥)
+- 흐름: 사용자 → 인터넷 → `IGW` → Route Table → `Public Subnet` → 퍼블릭 IP가 붙은 인스턴스 (다이어그램 ①–⑥)
 - `VCN`: 내 전용 사설 네트워크 `10.0.1.0/24`, `Subnet`: 그 안의 구역 `10.0.1.0/24` (서브넷이 1개뿐이라 VCN 대역 전체를 서브넷에 사용)
 - 기본 경로가 없으면 퍼블릭 IP가 있어도 응답 패킷이 나갈 길이 없어 **사실상 Private Subnet**이 됨
 - `0.0.0.0/0`은 "VCN 내부가 아닌 모든 목적지"의 기본값이라, 한 줄로 인터넷 방향 전체를 IGW로 보냄
@@ -218,6 +218,6 @@ Allow group cody-lab-group to manage volume-family in compartment cody-lab
 - Always Free 인스턴스는 홈 리전에서만 만들 수 있고, 유휴 상태면 회수될 수 있어요. 홈 리전은 가입 시 도쿄로 지정했습니다. (가입 때 홈 리전 선택 목록에 서울이 없었음)
 - NSG를 열어도 OS 방화벽이 막으면 외부 접속이 안 됩니다. 상세 사례: `docs/troubleshooting.md`
 - VCN 생성 시 기본 보안 목록에 있던 22번 포트 허용 규칙을 삭제하고, SSH는 NSG에서 내 IP(`/32`)만 허용했습니다. (캡처 11)
-- 정리 중 경로 테이블 규칙이 IGW를 참조해 IGW 종료가 막히는 오류를 겪었고, 규칙을 먼저 제거한 뒤 IGW를 삭제했습니다. (캡처 29~32)
-- 실습 종료 후 `docs/cleanup-checklist.md` 순서대로 전부 삭제했고, 단계별 근거는 캡처 25~38번에 있습니다.
-- 삭제 후 Cost Analysis(2026-10-01~06 UTC, 테넌시 전체)에서 누계 SGD 0.03(Block Storage, 10/05 하루분)이 확인됐고, 삭제 이후 날짜는 0.00입니다. (캡처 40, 사용량 데이터는 최대 24시간 지연될 수 있음)
+- 정리 중 경로 테이블 규칙이 IGW를 참조해 IGW 종료가 막히는 오류를 겪었고, 규칙을 먼저 제거한 뒤 IGW를 삭제했습니다. (캡처 29–32)
+- 실습 종료 후 `docs/cleanup-checklist.md` 순서대로 전부 삭제했고, 단계별 근거는 캡처 25–38번에 있습니다.
+- 삭제 후 Cost Analysis(2026-10-01–06 UTC, 테넌시 전체)에서 누계 SGD 0.03(Block Storage, 10/05 하루분)이 확인됐고, 삭제 이후 날짜는 0.00입니다. (캡처 40, 사용량 데이터는 최대 24시간 지연될 수 있음)
