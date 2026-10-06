@@ -114,7 +114,7 @@ codyssey-b3-1/
 - `.gitignore`: SSH 키 파일(`*.key`, `*.pem`)이 레포에 올라가지 않도록 차단
 - `docs/support-notice.png`: AWS 외 서비스 사용에 대한 운영진 답변 캡처 (다른 참가자 닉네임은 가림)
 - `docs/logs/`: SSH 접속, Nginx 설정, 외부 접속 타임아웃 터미널 로그
-- `docs/screenshots/`: 01~24번(IAM·네트워크·접속·트러블슈팅 증빙), 25~38번(리소스 정리 증빙), 39번(IAM 사용자 로그인 확인)
+- `docs/screenshots/`: 01~24번(IAM·네트워크·접속·트러블슈팅 증빙), 25~38번(리소스 정리 증빙), 39번(IAM 사용자 로그인 확인), 40번(비용 분석 확인)
 
 ![아키텍처](docs/architecture.png)
 
@@ -220,3 +220,4 @@ Allow group cody-lab-group to manage volume-family in compartment cody-lab
 - VCN 생성 시 기본 보안 목록에 있던 22번 포트 허용 규칙을 삭제하고, SSH는 NSG에서 내 IP(`/32`)만 허용했습니다. (캡처 11)
 - 정리 중 경로 테이블 규칙이 IGW를 참조해 IGW 종료가 막히는 오류를 겪었고, 규칙을 먼저 제거한 뒤 IGW를 삭제했습니다. (캡처 29~32)
 - 실습 종료 후 `docs/cleanup-checklist.md` 순서대로 전부 삭제했고, 단계별 근거는 캡처 25~38번에 있습니다.
+- 삭제 후 Cost Analysis(2026-10-01~06 UTC, 테넌시 전체)에서 누계 SGD 0.03(Block Storage, 10/05 하루분)이 확인됐고, 삭제 이후 날짜는 0.00입니다. (캡처 40, 사용량 데이터는 최대 24시간 지연될 수 있음)
