@@ -21,3 +21,6 @@
 - 제목에도 type 접두어를 붙인다. (예: `docs: PR 템플릿 및 커밋 컨벤션 추가`)
 - 본문은 PR 템플릿의 Why / What / How to Test를 채운다.
 - 민감정보(키, 비밀번호, 필요 이상의 IP·계정 정보)는 올리지 않는다.
+
+## scope 목록
+- scope는 `readme`, `evidence`, `network`, `convention` 중에서만 고른다. 이 목록에 없는 scope는 쓰지 않는다.
